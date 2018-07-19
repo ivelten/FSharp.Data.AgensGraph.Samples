@@ -7,7 +7,6 @@ type ReportsTo = ReportsTo
 type Sold = Sold
 type Purchased = Purchased
 type Orders = Orders
-type Rated = Rated
 type Supplies = Supplies
 type PartOf = PartOf
 
@@ -98,7 +97,10 @@ type Category =
       CategoryName : string
       Description : string }
 
-let store = Store.Open("User ID=postgres;Password=password;Host=localhost;Port=5432;Database=northwind;")
+let connectionString = "User ID=postgres;Password=password;Host=localhost;Port=5432;Database=northwind;"
+
+let store = Store.Open(connectionString)
+
 let connection = store.OpenConnection()
 
 let Northwind = connection.GetGraphContext("northwind_graph")
@@ -202,15 +204,6 @@ let Orders =
         typed edgeof<Orders>
     }
 
-let Rated =
-    edge {
-        context Northwind
-        named "rated"
-        startVertex Customer
-        endVertex Product
-        typed edgeof<Rated>
-    }
-
 let PartOf =
     edge {
         context Northwind
@@ -223,7 +216,7 @@ let PartOf =
 let Supplies =
     edge {
         context Northwind
-        named "supplies"
+        named "supplier"
         startVertex Supplier
         endVertex Product
         typed edgeof<Supplies>

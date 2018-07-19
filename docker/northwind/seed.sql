@@ -1,12 +1,12 @@
 CREATE EXTENSION IF NOT EXISTS file_fdw;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE SERVER northwind FOREIGN DATA WRAPPER file_fdw;
 
 CREATE FOREIGN TABLE categories (
 CategoryID int,
 CategoryName varchar(15),
-Description text,
-Picture bytea
+Description text
 ) 
 SERVER northwind
 OPTIONS (FORMAT 'csv', HEADER 'true', FILENAME '/resources/categories.csv', delimiter ',', quote '"', null '');
@@ -42,7 +42,6 @@ PostalCode varchar(10),
 Country varchar(15),
 HomePhone varchar(24),
 Extension varchar(4),
-Photo bytea,
 Notes text,
 ReportTo int,
 PhotoPath varchar(255)
@@ -190,3 +189,19 @@ CREATE (n)-[r:PURCHASED]->(m);
 MATCH (n:employee),(m:"order")
 WHERE m.employeeid=n.employeeid
 CREATE (n)-[r:SOLD]->(m);
+
+DO $$
+BEGIN
+ IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'event') THEN
+        CREATE TYPE event AS (
+        id varchar,
+        stream_name varchar,
+        type varchar,
+        position bigint,
+        global_position bigint,
+        data varchar,
+        metadata varchar,
+        time timestamp
+        );
+    END IF;
+END$$;
