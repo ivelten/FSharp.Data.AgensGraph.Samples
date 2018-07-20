@@ -9,6 +9,6 @@
 open FSharp.Data.AgensGraph
 
 #if INTERACTIVE
-let printer = TablePrinter.GetFsiPrinter(TablePrinterFormat.Alternative, enableCount = true, maxRows = 100)
+let printer = TablePrinter.GetFsiPrinter(TablePrinterFormat.Default, enableCount = true, maxRows = 100)
 fsi.AddPrintTransformer printer
 #endif

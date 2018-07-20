@@ -20,7 +20,7 @@ type Shipper =
       CompanyName : string }
 
 type Territory =
-    { TerritoryId : int
+    { TerritoryId : string
       RegionId : int
       TerritoryDescription : string }
 
@@ -34,13 +34,13 @@ type Employee =
       Title : string
       PhotoPath : string
       Notes : string
-      ReportTo : int
+      ReportTo : int option
       BirthDate : DateTime
       Address : string
       PostalCode : string
       HireDate : DateTime
       Country : string
-      Region : string
+      Region : string option
       HomePhone : string }
 
 type Order =
@@ -60,14 +60,14 @@ type Order =
 type Customer =
     { CustomerId : string
       City : string
-      Fax : string
+      Fax : string option
       CompanyName : string
       Country : string
       ContactTitle : string
       Phone : string
       ContactName : string
       Address : string
-      PostalCode : string }
+      PostalCode : string option }
 
 type Supplier =
     { SupplierId : int
@@ -90,7 +90,7 @@ type Product =
       ReorderLevel : int
       UnitsOnOrder : int
       UnitPrice : decimal
-      Discontinued : bool }
+      Discontinued : string }
 
 type Category =
     { CategoryId : int
@@ -99,7 +99,16 @@ type Category =
 
 let connectionString = "User ID=postgres;Password=password;Host=localhost;Port=5432;Database=northwind;"
 
-let store = Store.Open(connectionString)
+let configuration =
+    { StoreConfiguration.Default with
+        Logger = 
+            { new Logger with 
+                member __.LogCommand (text, parameters) =
+                    printfn "Executing Command :\n%s\n%A" text parameters
+            }
+    }
+
+let store = Store.Open(connectionString, configuration)
 
 let connection = store.OpenConnection()
 
