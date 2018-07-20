@@ -4,7 +4,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE SERVER northwind FOREIGN DATA WRAPPER file_fdw;
 
 CREATE FOREIGN TABLE categories (
-CategoryID int,
+CategoryId int,
 CategoryName varchar(15),
 Description text
 ) 
@@ -12,7 +12,7 @@ SERVER northwind
 OPTIONS (FORMAT 'csv', HEADER 'true', FILENAME '/resources/categories.csv', delimiter ',', quote '"', null '');
 
 CREATE FOREIGN TABLE customers (
-CustomerID char(5),
+CustomerId char(5),
 CompanyName varchar(40),
 ContactName varchar(30),
 ContactTitle varchar(30),
@@ -28,7 +28,7 @@ SERVER northwind
 OPTIONS (FORMAT 'csv', HEADER 'true', FILENAME '/resources/customers.csv', delimiter ',', quote '"', null '');
 
 CREATE FOREIGN TABLE employees (
-EmployeeID int,
+EmployeeId int,
 LastName varchar(20),
 FirstName varchar(10),
 Title varchar(30),
@@ -50,15 +50,15 @@ SERVER northwind
 OPTIONS (FORMAT 'csv', HEADER 'true', FILENAME '/resources/employees.csv', delimiter ',', quote '"', null '');
 
 CREATE FOREIGN TABLE employee_territories (
-EmployeeID int,
-TerritoryID varchar(20)
+EmployeeId int,
+TerritoryId varchar(20)
 ) 
 SERVER northwind
 OPTIONS (FORMAT 'csv', HEADER 'true', FILENAME '/resources/employee_territories.csv', delimiter ',', quote '"', null ''); 
 
 CREATE FOREIGN TABLE orders_details (
-orderID int,
-ProductID int,
+orderId int,
+ProductId int,
 UnitPrice numeric(18,2),
 Quantity smallint,
 Discount real
@@ -67,9 +67,9 @@ SERVER northwind
 OPTIONS (FORMAT 'csv', HEADER 'true', FILENAME '/resources/orders_details.csv', delimiter ',', quote '"', null ''); 
 
 CREATE FOREIGN TABLE orders (
-orderID int,
-CustomerID char(5),
-EmployeeID int,
+orderId int,
+CustomerId char(5),
+EmployeeId int,
 orderDate date,
 RequiredDate date,
 ShippedDate date,
@@ -86,10 +86,10 @@ SERVER northwind
 OPTIONS (FORMAT 'csv', HEADER 'true', FILENAME '/resources/orders.csv', delimiter ',', quote '"', null ''); 
 
 CREATE FOREIGN TABLE products (
-ProductID int, 
+ProductId int, 
 ProductName varchar(40),
-SupplierID int, 
-CategoryID int, 
+SupplierId int, 
+CategoryId int, 
 QuantityPerUnit varchar(20),
 UnitPrice numeric(18,2), 
 UnitsInStock smallint, 
@@ -101,14 +101,14 @@ SERVER northwind
 OPTIONS (FORMAT 'csv', HEADER 'true', FILENAME '/resources/products.csv', delimiter ',', quote '"', null '');
 
 CREATE FOREIGN TABLE regions (
-RegionID int,
+RegionId int,
 RegionDescription char(50)
 ) 
 SERVER northwind
 OPTIONS (FORMAT 'csv', HEADER 'true', FILENAME '/resources/regions.csv', delimiter ',', quote '"', null ''); 
 
 CREATE FOREIGN TABLE shippers (
-ShipperID int,
+ShipperId int,
 CompanyName varchar(40),
 Phone varchar(24)
 ) 
@@ -116,7 +116,7 @@ SERVER northwind
 OPTIONS (FORMAT 'csv', HEADER 'true', FILENAME '/resources/shippers.csv', delimiter ',', quote '"', null ''); 
 
 CREATE FOREIGN TABLE suppliers (
-SupplierID int,
+SupplierId int,
 CompanyName varchar(40),
 ContactName varchar(30),
 ContactTitle varchar(30),
@@ -133,9 +133,9 @@ SERVER northwind
 OPTIONS (FORMAT 'csv', HEADER 'true', FILENAME '/resources/suppliers.csv', delimiter ',', quote '"', null '');
 
 CREATE FOREIGN TABLE territories (
-TerritoryID varchar(20),
+TerritoryId varchar(20),
 TerritoryDescription char(50),
-RegionID int
+RegionId int
 ) 
 SERVER northwind
 OPTIONS (FORMAT 'csv', HEADER 'true', FILENAME '/resources/territories.csv', delimiter ',', quote '"', null '');
@@ -205,3 +205,13 @@ BEGIN
         );
     END IF;
 END$$;
+
+DROP elabel IF EXISTS rated;
+CREATE elabel IF NOT EXISTS rated;
+
+MATCH (c:customer)-[:PURCHASED]->(o:"order")-[:ORDERS]->(p:product)
+WITH c, count(p) AS total
+MATCH (c)-[:PURCHASED]->(o:"order")-[:ORDERS]->(p:product)
+WITH c, total, p, count(o) AS orders
+WITH c, total, p, orders, orders*1.0/total AS rating
+MERGE (c)-[rated:RATED {totalcount: to_jsonb(total), ordercount: to_jsonb(orders), rating: rating}]->(p);

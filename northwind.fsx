@@ -10,6 +10,11 @@ type Orders = Orders
 type Supplies = Supplies
 type PartOf = PartOf
 
+type Rated = 
+    { TotalCount : int
+      OrderCount : int
+      Rating : float }
+
 type Region =
     { RegionId : int
       RegionDescription : string }
@@ -229,4 +234,13 @@ let Supplies =
         startVertex Supplier
         endVertex Product
         typed edgeof<Supplies>
+    }
+
+let Rated =
+    edge {
+        context Northwind
+        named "rated"
+        startVertex Customer
+        endVertex Product
+        typed edgeof<Rated>
     }

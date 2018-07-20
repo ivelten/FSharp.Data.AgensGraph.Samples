@@ -64,3 +64,17 @@ let customerOrders =
         constrain (customer-|purchased|->(order-|orders|->product)) 
         select (customer, purchased, order, orders, product)
     }
+
+let anatr =
+    graph {
+        for customer in Customer do
+        where (customer.Properties.CustomerId = "ANATR")
+        select customer
+    }
+
+let orderRates (customer : Vertex<Customer>) =
+    graph {
+        for (rated, product) in Rated, Product do
+        constrain (customer-|rated|->product)
+        select (customer, rated, product)
+    }
