@@ -4,16 +4,39 @@ open System
 open FSharp.Data.AgensGraph
 
 type ReportsTo = ReportsTo
+
 type Sold = Sold
+
 type Purchased = Purchased
+
 type Orders = Orders
+
 type Supplies = Supplies
+
 type PartOf = PartOf
 
 type Rated = 
     { TotalCount : int
       OrderCount : int
       Rating : float }
+
+module Edges =
+    let reportsTo = ReportsTo
+
+    let sold = Sold
+
+    let purchased = Purchased
+
+    let orders = Orders
+
+    let supplies = Supplies
+
+    let partOf = PartOf
+
+    let rated totalCount orderCount rating =
+        { TotalCount = totalCount
+          OrderCount = orderCount
+          Rating = rating }
 
 type Region =
     { RegionId : int
@@ -39,7 +62,7 @@ type Employee =
       Title : string
       PhotoPath : string
       Notes : string
-      ReportTo : int option
+      ReportsTo : int option
       BirthDate : DateTime
       Address : string
       PostalCode : string
@@ -185,7 +208,7 @@ let Category =
 let ReportsTo =
     edge {
         context Northwind
-        named "reports_to"
+        named "reportsTo"
         startVertex Employee
         endVertex Employee
         typed edgeof<ReportsTo>

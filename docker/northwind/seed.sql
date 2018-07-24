@@ -43,7 +43,7 @@ CREATE FOREIGN TABLE employees (
 "homePhone" varchar(24),
 "extension" varchar(4),
 "notes" text,
-"reportTo" int,
+"reportsTo" int,
 "photoPath" varchar(255)
 ) 
 SERVER northwind 
@@ -171,8 +171,8 @@ AND m."productId"=to_jsonb((source)."productId")
 CREATE (n)-[r:ORDERS {"unitPrice":(source)."unitPrice","quantity":(source)."quantity","discount":(source)."discount"}]->(m);
 
 MATCH (n:employee),(m:employee)
-WHERE m."employeeId"=n."reportTo"
-CREATE (n)-[r:REPORTS_TO]->(m);
+WHERE m."employeeId"=n."reportsTo"
+CREATE (n)-[r:REPORTSTO]->(m);
 
 MATCH (n:supplier),(m:product)
 WHERE m."supplierId"=n."supplierId"
