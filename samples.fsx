@@ -110,16 +110,14 @@ let removeManager (employee : Vertex<Employee>) =
         delete reportsTo
     } |> ignore
     let updated = { employee.Properties with ReportsTo = None }
-    let source = graph { select employee }
-    connection.Execute [ Mutations.UpdateVertex(updated, source, Employee) ]
+    connection.Execute [ Mutations.UpsertVertex((fun (e : Employee) -> e.EmployeeId), updated, Employee) ]
 
 // Createst a new relationship of an employee with a manager
 let assignManager (employee : Vertex<Employee>) (manager : Vertex<Employee>) =
     let updated = { employee.Properties with ReportsTo = Some manager.Properties.EmployeeId }
-    let source = graph { select employee }
     connection.Execute 
         [ Mutations.CreateEdge(Edges.reportsTo, ReportsTo, employee.Id, manager.Id)
-          Mutations.UpdateVertex(updated, source, Employee) ]
+          Mutations.UpsertVertex((fun (e : Employee) -> e.EmployeeId), updated, Employee) ]
 
 // Updates a manager of an employee
 let changeManager employee newManager =
