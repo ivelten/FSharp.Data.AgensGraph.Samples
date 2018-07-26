@@ -39,7 +39,7 @@ module Edges =
           Rating = rating }
 
 type Region =
-    { RegionId : int
+    { RegionIdx : int
       RegionDescription : string }
 
 type Shipper =

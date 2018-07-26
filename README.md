@@ -165,3 +165,31 @@ let removeManager (employee : Vertex<Employee>) =
     let updated = { employee.Properties with ReportsTo = None }
     connection.Execute [ Mutations.UpsertVertex((fun (e : Employee) -> e.EmployeeId), updated, Employee) ]
 ```
+
+### Type Mapping exceptions
+
+Many exceptions originated from type mapping (map objects from database and versa) actually don't give much information on what point the mapping did fail. Say, if our region object has a property name wrongly mapped:
+
+```fsharp
+type Region =
+    { RegionIdx : int // intentional wrong name
+      RegionDescription : string }
+
+let region =
+    graph {
+        for region in Region do
+        first
+    }
+
+> region.Properties;;
+FSharp.Data.AgensGraph.TypeConverterException: Exceção do tipo 'FSharp.Data.AgensGraph.TypeConverterException' foi acionada.
+   em <StartupCode$FSharp-Data-AgensGraph>.$TypeConversion.mapping@1-5(TypeConverterConfiguration config, FSharpMap`2 recordFields, String[] names, PropertyInfo tupledArg0, TypeConverter tupledArg1)
+   em FSharp.Data.AgensGraph.RecordConverter`1.getValues(TypeConverterConfiguration config, FSharpMap`2 recordFields)
+   em FSharp.Data.AgensGraph.RecordConverter`1.Read(Object value, TypeConverterConfiguration config)
+   em System.Lazy`1.CreateValue()
+   em System.Lazy`1.LazyInitValue()
+   em System.Lazy`1.get_Value()
+   em FSharp.Data.AgensGraph.TypeHelpers.VertexImpl`1.FSharp-Data-AgensGraph-Entity`1-get_Properties()
+   em <StartupCode$FSI_0004>.$FSI_0004.main@()
+Stopped due to error
+```

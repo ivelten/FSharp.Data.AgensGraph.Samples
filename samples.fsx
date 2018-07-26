@@ -145,3 +145,10 @@ let updateEmployee (e : Employee) =
             where (employee.Properties.EmployeeId = id)
         }
     connection.Execute [ Mutations.UpdateVertex(e, query, Employee) ]
+
+// Query a region
+let region =
+    graph {
+        for region in Region do
+        first
+    }
