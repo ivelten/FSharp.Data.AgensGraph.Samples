@@ -146,6 +146,11 @@ let updateEmployee (e : Employee) =
         }
     connection.Execute [ Mutations.UpdateVertex(e, query, Employee) ]
 
+let updateFirstName (e : Vertex<Employee>) (newName : string) =
+    let query = graph { select e }
+    let updated = { e.Properties with FirstName = newName }
+    connection.Execute [ Mutations.UpdateVertex(updated, query, Employee) ]
+
 // Query a region
 let region =
     graph {

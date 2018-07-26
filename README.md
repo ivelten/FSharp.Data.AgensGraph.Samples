@@ -136,9 +136,32 @@ RETURN "employee__f8f9a6" as "employee__f8f9a6"
 val it : unit = ()
 ```
 
+### Suport for Source<'T> directly from a graph select from a Vertex
+
+`UpdateVertex` does have a peculiar case where we need to inform the updated properties of the vertex, a `Source<Vertex<'T>>` which is a query to obtain the original object, and a `TypedVertices` to refer to the
+vertice definition in the connection. If we have a function to update an emplooye like this
+
+```fsharp
+let updateFirstName (e : Vertex<Employee>) (newName : string) =
+    let query = graph { select e }
+    let updated = { e.Properties with FirstName = newName }
+    connection.Execute [ Mutations.UpdateVertex(updated, query, Employee) ]
+```
+
+this will result in an error:
+
+```fsharp
+> updateFirstName janet "Janett";;
+FSharp.Data.AgensGraph.QueryTranslationException: Exceção do tipo 'FSharp.Data.AgensGraph.QueryTranslationException' foi acionada.
+   em FSharp.Data.AgensGraph.QueryTransformer.GraphBuilder.RunAsQuery[T](GraphBuilder x, FSharpExpr expr, TransContext ctx)
+   em FSI_0002.Samples.updateFirstName(Vertex`1 e, String newName) na D:\Projects\FSharp.Data.AgensGraph.Samples\samples.fsx:linha 151
+   em <StartupCode$FSI_0004>.$FSI_0004.main@()
+Stopped due to error
+```
+
 ### UpsertVertex issues
 
-UpsertVertex key mapping function needs to be passed as a lambda inside the function call. Any other way to do this (external function) will not work, even with `ReflectedDefinition` attribute. For example, this will not work:
+`UpsertVertex` key mapping function needs to be passed as a lambda inside the function call. Any other way to do this (external function) will not work, even with `ReflectedDefinition` attribute. For example, this will not work:
 
 ```fsharp
 let getKey (e : Employee) = e.EmployeeId
