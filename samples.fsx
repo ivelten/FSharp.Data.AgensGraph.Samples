@@ -135,3 +135,13 @@ let getManager employee =
 // Sample employees
 let janet = employee 3
 let steven = employee 5
+
+// Updates an employee
+let updateEmployee (e : Employee) =
+    let id = e.EmployeeId
+    let query = 
+        graph {
+            for employee in Employee do
+            where (employee.Properties.EmployeeId = id)
+        }
+    connection.Execute [ Mutations.UpdateVertex(e, query, Employee) ]
