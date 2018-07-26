@@ -72,7 +72,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 ### Query error: parameter building
 
-Some matching queries are giving an error with a `@` character near an identifier. This seems to be happening when using an object obtained from another query. For example:
+Some matching queries are giving an error with a `@` character near an identifier. This seems to be happening when using an object obtained from another query (maybe some internal routine that maps arguments isn't working in all expected cases). For example:
 
 ```fsharp
 let employee id =
