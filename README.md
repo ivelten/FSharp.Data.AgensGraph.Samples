@@ -2,7 +2,9 @@
 
 ## Issues and ideas
 
-1. Queries running against AgensGraph seems to match propertiy names of vertex and edges in camel case. The query translator system seems to automatically lower the first letter, but the others remain as they are. For example,
+### Property name casing
+
+Queries running against AgensGraph seems to match propertiy names of vertex and edges in camel case. The query translator system seems to automatically lower the first letter, but the others remain as they are. For example,
 if we have a table like this
 
 ```sql
@@ -40,7 +42,9 @@ SERVER northwind
 OPTIONS (FORMAT 'csv', HEADER 'true', FILENAME '/resources/regions.csv', delimiter ',', quote '"', null ''); 
 ```
 
-2. Event system is not being initialized by the Store. A boilerplate sql script to seed event tables is necessary to work with the component:
+### Database initialization boilerplate scripts
+
+Event system is not being initialized by the Store. A boilerplate sql script to seed event tables is necessary to work with the component:
 
 ```sql
 DO $$
@@ -60,13 +64,15 @@ BEGIN
 END$$;
 ```
 
-3. Unique ID generator extension is needed by the component, but not automatically provided on the database. Currently, a sql script is necessary to work with the component:
+Also, an Unique ID generator extension is needed by the component, but not automatically provided on the database. Currently, a sql script is necessary to work with the component:
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 ```
 
-4. Some matching queries are giving an error with a `@` character near an identifier. This seems to be happening when using an object obtained from another query. For example:
+### Query error: parameter building
+
+Some matching queries are giving an error with a `@` character near an identifier. This seems to be happening when using an object obtained from another query. For example:
 
 ```fsharp
 let employee id =
@@ -130,7 +136,9 @@ RETURN "employee__f8f9a6" as "employee__f8f9a6"
 val it : unit = ()
 ```
 
-5. UpsertVertex key mapping function needs to be passed as a lambda inside the function call. Any other way to do this (external function) will not work, even with `ReflectedDefinition` attribute. For example, this will not work:
+### UpsertVertex issues
+
+UpsertVertex key mapping function needs to be passed as a lambda inside the function call. Any other way to do this (external function) will not work, even with `ReflectedDefinition` attribute. For example, this will not work:
 
 ```fsharp
 let getKey (e : Employee) = e.EmployeeId
