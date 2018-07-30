@@ -78,6 +78,17 @@ let customer id =
 // A sample customer
 let anton = customer "ANTON"
 
+// Gets a customer average Freight
+let customerAverageFreight (c : Vertex<Customer>) =
+    let id = c.Properties.CustomerId
+    graph {
+        for (customer, order) in Customer, Order do
+        where (customer.Properties.CustomerId = id)
+        constrain(customer-->order)
+        select(sum(order.Properties.Freight))
+        single
+    }
+
 // Shortest path between customer and order
 let purchaseInfo (customer : Vertex<Customer>) =
     graph {
@@ -146,14 +157,23 @@ let updateEmployee (e : Employee) =
         }
     connection.Execute [ Mutations.UpdateVertex(e, query, Employee) ]
 
+// Updates customer first name
 let updateFirstName (e : Vertex<Employee>) (newName : string) =
     let query = graph { select e }
     let updated = { e.Properties with FirstName = newName }
     connection.Execute [ Mutations.UpdateVertex(updated, query, Employee) ]
 
-// Query a region
-let region =
-    graph {
-        for region in Region do
-        first
-    }
+// Events
+let defaultStream = "account"
+
+let credit amount = Account.Append(defaultStream, Credited amount)
+
+let debit amount = Account.Append(defaultStream, Debited amount)
+
+let getStreamEvents () = 
+    NorthwindEvents.Events.GetStreamEvents(defaultStream)
+    |> Seq.cast<Event<AccountEvent>>
+    |> Seq.map (fun d -> d.Data)
+
+let getLastEvent () =
+    NorthwindEvents.Events.GetLastEvent(defaultStream)

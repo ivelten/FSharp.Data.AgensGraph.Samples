@@ -142,6 +142,8 @@ let connection = store.OpenConnection()
 
 let Northwind = connection.GetGraphContext("northwind_graph")
 
+let NorthwindEvents = connection.GetEventContext("public")
+
 let Region =
     vertex {
         context Northwind
@@ -266,4 +268,15 @@ let Rated =
         startVertex Customer
         endVertex Product
         typed edgeof<Rated>
+    }
+
+type AccountEvent =
+    | Debited of decimal
+    | Credited of decimal
+
+let Account =
+    event {
+        context NorthwindEvents
+        named "account"
+        typed eventof<AccountEvent>
     }

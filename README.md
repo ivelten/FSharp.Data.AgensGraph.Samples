@@ -216,3 +216,5 @@ FSharp.Data.AgensGraph.TypeConverterException: Exceção do tipo 'FSharp.Data.Ag
    em <StartupCode$FSI_0004>.$FSI_0004.main@()
 Stopped due to error
 ```
+
+Type mapping exceptions also happen for optional fields (when they are not mapped as an Option), and when methods like `single` are called with no results - perhaps an exception saying "Sequence contains no elements" would be better?

@@ -190,22 +190,6 @@ MATCH (n:employee),(m:"order")
 WHERE m."employeeId"=n."employeeId"
 CREATE (n)-[r:SOLD]->(m);
 
-DO $$
-BEGIN
- IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'event') THEN
-        CREATE TYPE event AS (
-        id varchar,
-        stream_name varchar,
-        type varchar,
-        position bigint,
-        global_position bigint,
-        data varchar,
-        metadata varchar,
-        time timestamp
-        );
-    END IF;
-END$$;
-
 DROP elabel IF EXISTS rated;
 CREATE elabel IF NOT EXISTS rated;
 
@@ -215,3 +199,338 @@ MATCH (c)-[:PURCHASED]->(o:"order")-[:ORDERS]->(p:product)
 WITH c, total, p, count(o) AS orders
 WITH c, total, p, orders, orders*1.0/total AS rating
 MERGE (c)-[rated:RATED {"totalCount": to_jsonb(total), "orderCount": to_jsonb(orders), rating: rating}]->(p);
+
+-- Stream -> Category
+CREATE OR REPLACE FUNCTION category(
+  _stream_name varchar
+)
+RETURNS varchar
+AS $$
+BEGIN
+  return split_part(_stream_name, '-', 1);
+END;
+$$ LANGUAGE plpgsql
+IMMUTABLE;
+
+-- Messages table
+
+-- ----------------------------
+--  Table structure for events
+-- ----------------------------
+CREATE TABLE "public"."events" (
+  "id" UUID NOT NULL DEFAULT uuid_generate_v4(),
+  "stream_name" varchar(255) NOT NULL COLLATE "default",
+  "type" varchar(255) NOT NULL COLLATE "default",
+  "position" bigint NOT NULL,
+  "global_position" bigserial NOT NULL ,
+  "data" jsonb,
+  "metadata" jsonb,
+  "time" TIMESTAMP WITHOUT TIME ZONE DEFAULT (now() AT TIME ZONE 'utc') NOT NULL
+)
+WITH (OIDS=FALSE);
+
+-- ----------------------------
+--  Primary key structure for table events
+-- ----------------------------
+ALTER TABLE "public"."events" ADD PRIMARY KEY ("global_position") NOT DEFERRABLE INITIALLY IMMEDIATE;
+
+
+CREATE INDEX "events_category_global_position_idx" ON "public"."events" USING btree(category(stream_name) COLLATE "default" "pg_catalog"."text_ops" ASC NULLS LAST, "global_position" "pg_catalog"."int8_ops" ASC NULLS LAST);
+CREATE INDEX  "events_id_idx" ON "public"."events" USING btree(id ASC NULLS LAST);
+CREATE UNIQUE INDEX  "events_stream_name_position_uniq_idx" ON "public"."events" USING btree(stream_name COLLATE "default" "pg_catalog"."text_ops" ASC NULLS LAST, "position" "pg_catalog"."int8_ops" ASC NULLS LAST);
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'event') THEN
+    CREATE TYPE event AS (
+      id varchar,
+      stream_name varchar,
+      type varchar,
+      position bigint,
+      global_position bigint,
+      data varchar,
+      metadata varchar,
+      time timestamp
+    );
+  END IF;
+END$$;
+
+
+-- ----------------------------
+--  FUNCTIONS
+-- ----------------------------
+
+-- Get Category Messages
+CREATE OR REPLACE FUNCTION get_category_events(
+  _category_name varchar,
+  _position bigint DEFAULT 0,
+  _batch_size bigint DEFAULT 1000,
+  _condition varchar DEFAULT NULL
+)
+RETURNS SETOF event
+AS $$
+DECLARE
+  command text;
+BEGIN
+  command := '
+    SELECT
+      id::varchar,
+      stream_name::varchar,
+      type::varchar,
+      position::bigint,
+      global_position::bigint,
+      data::varchar,
+      metadata::varchar,
+      time::timestamp
+    FROM
+      events
+    WHERE
+      category(stream_name) = $1 AND
+      global_position >= $2';
+
+  if _condition is not null then
+    command := command || ' AND
+      %s';
+    command := format(command, _condition);
+  end if;
+
+  command := command || '
+    ORDER BY
+      global_position ASC
+    LIMIT
+      $3';
+
+  -- RAISE NOTICE '%', command;
+
+  RETURN QUERY EXECUTE command USING _category_name, _position, _batch_size;
+END;
+$$ LANGUAGE plpgsql
+VOLATILE;
+
+
+
+-- Get Last event
+CREATE OR REPLACE FUNCTION get_last_event(
+  _stream_name varchar
+)
+RETURNS SETOF event
+AS $$
+DECLARE
+  command text;
+BEGIN
+  command := '
+    SELECT
+      id::varchar,
+      stream_name::varchar,
+      type::varchar,
+      position::bigint,
+      global_position::bigint,
+      data::varchar,
+      metadata::varchar,
+      time::timestamp
+    FROM
+      events
+    WHERE
+      stream_name = $1
+    ORDER BY
+      position DESC
+    LIMIT
+      1';
+
+  -- RAISE NOTICE '%', command;
+
+  RETURN QUERY EXECUTE command USING _stream_name;
+END;
+$$ LANGUAGE plpgsql
+VOLATILE;
+
+
+
+-- Get Stream Messages
+CREATE OR REPLACE FUNCTION get_stream_events(
+  _stream_name varchar,
+  _position bigint DEFAULT 0,
+  _batch_size bigint DEFAULT 1000,
+  _condition varchar DEFAULT NULL
+)
+RETURNS SETOF event
+AS $$
+DECLARE
+  command text;
+BEGIN
+  command := '
+    SELECT
+      id::varchar,
+      stream_name::varchar,
+      type::varchar,
+      position::bigint,
+      global_position::bigint,
+      data::varchar,
+      metadata::varchar,
+      time::timestamp
+    FROM
+      events
+    WHERE
+      stream_name = $1 AND
+      position >= $2';
+
+  if _condition is not null then
+    command := command || ' AND
+      %s';
+    command := format(command, _condition);
+  end if;
+
+  command := command || '
+    ORDER BY
+      position ASC
+    LIMIT
+      $3';
+
+  -- RAISE NOTICE '%', command;
+
+  RETURN QUERY EXECUTE command USING _stream_name, _position, _batch_size;
+END;
+$$ LANGUAGE plpgsql
+VOLATILE;
+
+
+
+CREATE OR REPLACE FUNCTION get_events(
+  _type varchar DEFAULT NULL,
+  _condition varchar DEFAULT NULL
+)
+RETURNS SETOF event
+AS $$
+DECLARE
+  command text;
+BEGIN
+  command := '
+    SELECT
+      id::varchar,
+      stream_name::varchar,
+      type::varchar,
+      position::bigint,
+      global_position::bigint,
+      data::varchar,
+      metadata::varchar,
+      time::timestamp
+    FROM
+      events';
+
+  if _type is not null or _condition is not null then
+    command := command || ' Where ';
+    if _type is not null then
+        command := command || 'type = ''%s''';
+        command := format(command, _type);
+    end if;
+    if _condition is not null then
+      if _type is not null then
+        command := command || ' AND ';
+      end if;
+      command := command || '%s';
+      command := format(command, _condition);
+    end if;  
+  end if;
+
+  command := command || '
+    ORDER BY
+      global_position ASC';
+  -- RAISE NOTICE '%', command;
+
+  RETURN QUERY EXECUTE command;
+END;
+$$ LANGUAGE plpgsql
+VOLATILE;
+
+
+
+-- Hash 64
+CREATE OR REPLACE FUNCTION hash_64(
+  _stream_name varchar
+)
+RETURNS bigint
+AS $$
+DECLARE
+  hash bigint;
+BEGIN
+  select left('x' || md5(_stream_name), 16)::bit(64)::bigint into hash;
+  return hash;
+END;
+$$ LANGUAGE plpgsql
+IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION stream_version(
+  _stream_name varchar
+)
+RETURNS bigint
+AS $$
+DECLARE
+  stream_version bigint;
+BEGIN
+  select max(position) into stream_version from events where stream_name = _stream_name;
+
+  return stream_version;
+END;
+$$ LANGUAGE plpgsql
+VOLATILE;
+
+
+CREATE OR REPLACE FUNCTION write_event(
+  _id varchar,
+  _stream_name varchar,
+  _type varchar,
+  _data jsonb,
+  _metadata jsonb DEFAULT NULL,
+  _expected_version bigint DEFAULT NULL
+)
+RETURNS bigint
+AS $$
+DECLARE
+  event_id uuid;
+  stream_version bigint;
+  position bigint;
+  stream_name_hash bigint;
+BEGIN
+  event_id = uuid(_id);
+
+  stream_name_hash = hash_64(_stream_name); 
+  PERFORM pg_advisory_xact_lock(stream_name_hash);
+
+  stream_version := stream_version(_stream_name);
+
+  if stream_version is null then
+    stream_version := -1;
+  end if;
+
+  if _expected_version is not null then
+    if _expected_version != stream_version then
+      raise exception 'Wrong expected version: % (Stream: %, Stream Version: %)', _expected_version, _stream_name, stream_version using errcode = 'E0001';
+    end if;
+  end if;
+
+  position := stream_version + 1;
+
+  insert into "events"
+    (
+      "id",
+      "stream_name",
+      "position",
+      "type",
+      "data",
+      "metadata"
+    )
+  values
+    (
+      event_id,
+      _stream_name,
+      position,
+      _type,
+      _data,
+      _metadata
+    )
+  ;
+
+  return position;
+END;
+$$ LANGUAGE plpgsql
+VOLATILE;

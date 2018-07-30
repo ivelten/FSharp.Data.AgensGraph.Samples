@@ -2,22 +2,16 @@
 
 open FSharp.Data.AgensGraph
 open Northwind
+open Samples
 
-type MutationBuilder() =
+type GraphBuilder with
+    [<CustomOperation("updateVertex", MaintainsVariableSpace=true, AllowIntoPattern=true)>]
+    member __.UpdateVertex(query : ISC<'T>, properties : 'U, collection : TypedVertices<'T, 'U>) =
+        Mutations.UpdateVertex(properties, query, collection)
 
-    [<CustomOperation("updateVertex")>]
-    member __.UpdateVertex(src, props, collection) =
-        let src = graph { select src }
-        Mutations.UpdateVertex(props, src, collection)
+let props (e : Vertex<Employee>) = { e.Properties with ReportsTo = None }
 
-    member __.Zero() = Unchecked.defaultof<Mutation>
-
-    member __.Yield(_) = Unchecked.defaultof<Mutation>
-
-[<AutoOpen>]
-module Computations =
-    let mutation = MutationBuilder()
-
-let test = mutation {
-    updateVertex janet { janet.Properties with ReportsTo = None }
+let x = graph {
+    for e in Employee do
+    updateVertex (props e) Employee
 }
