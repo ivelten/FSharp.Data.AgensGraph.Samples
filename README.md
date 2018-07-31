@@ -218,3 +218,73 @@ Stopped due to error
 ```
 
 Type mapping exceptions also happen for optional fields (when they are not mapped as an Option), and when methods like `single` are called with no results - perhaps an exception saying "Sequence contains no elements" would be better?
+
+### Decimal serialization
+
+Decimal values that are integers are serialized as integers in the json properties. This is causing a `TypeConverterException` when deserializing them:
+
+```fsharp
+let NorthwindEvents = connection.GetEventContext("public")
+
+type AccountEvent =
+    | Debited of decimal
+    | Credited of decimal
+
+let Account =
+    event {
+        context NorthwindEvents
+        named "account"
+        typed eventof<AccountEvent>
+    }
+
+let defaultStream = "account"
+
+let credit amount = Account.Append(defaultStream, Credited amount)
+
+let debit amount = Account.Append(defaultStream, Debited amount)
+
+let getStreamEvents () = 
+    NorthwindEvents.Events.GetStreamEvents(defaultStream)
+    |> Seq.cast<Event<AccountEvent>>
+    |> Seq.map (fun d -> d.Data)
+
+> credit 100M;
+- ;;
+Executing Command :
+select "public".write_event(uuid_generate_v4()::varchar, @stream, @type, @data, @metadata, @version);
+[FSharp.Data.AgensGraph.Parameter`1[System.String];
+ FSharp.Data.AgensGraph.Parameter`1[System.String];
+ FSharp.Data.AgensGraph.Parameter`1[System.String];
+ FSharp.Data.AgensGraph.Parameter`1[System.String];
+ FSharp.Data.AgensGraph.Parameter`1[System.DBNull]]
+val it : int64 = 0L
+
+> debit 50M;;
+Executing Command :
+select "public".write_event(uuid_generate_v4()::varchar, @stream, @type, @data, @metadata, @version);
+[FSharp.Data.AgensGraph.Parameter`1[System.String];
+ FSharp.Data.AgensGraph.Parameter`1[System.String];
+ FSharp.Data.AgensGraph.Parameter`1[System.String];
+ FSharp.Data.AgensGraph.Parameter`1[System.String];
+ FSharp.Data.AgensGraph.Parameter`1[System.DBNull]]
+val it : int64 = 1L
+
+> credit 200M;;
+Executing Command :
+select "public".write_event(uuid_generate_v4()::varchar, @stream, @type, @data, @metadata, @version);
+[FSharp.Data.AgensGraph.Parameter`1[System.String];
+ FSharp.Data.AgensGraph.Parameter`1[System.String];
+ FSharp.Data.AgensGraph.Parameter`1[System.String];
+ FSharp.Data.AgensGraph.Parameter`1[System.String];
+ FSharp.Data.AgensGraph.Parameter`1[System.DBNull]]
+val it : int64 = 2L
+
+> getStreamEvents();;
+Executing Command :
+select "public".get_stream_events(@stream, @position, @size);
+[FSharp.Data.AgensGraph.Parameter`1[System.String];
+ FSharp.Data.AgensGraph.Parameter`1[System.Int64];
+ FSharp.Data.AgensGraph.Parameter`1[System.Int64]]
+val it : seq<Northwind.AccountEvent> =
+  Error: Exceção do tipo 'FSharp.Data.AgensGraph.TypeConverterException' foi acionada.
+```

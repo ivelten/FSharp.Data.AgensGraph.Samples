@@ -176,4 +176,4 @@ let getStreamEvents () =
     |> Seq.map (fun d -> d.Data)
 
 let getLastEvent () =
-    NorthwindEvents.Events.GetLastEvent(defaultStream)
+    (NorthwindEvents.Events.GetLastEvent(defaultStream) :?> Event<AccountEvent>).Data
