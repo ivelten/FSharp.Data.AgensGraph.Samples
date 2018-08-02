@@ -75,6 +75,24 @@ let customer id =
         single
     }
 
+type FilterType =
+    | ExactMatch
+    | Like
+    | Regex
+
+[<ReflectedDefinition>] 
+let filterName (f : FilterType) (name : string) (c : Vertex<Customer>) =
+    match f with
+    | ExactMatch -> c.Properties.ContactName = name
+    | Like -> c.Properties.ContactName =% name
+    | Regex -> c.Properties.ContactName =~ name
+
+let customersByContactName filterType name =
+    graph {
+        for customer in Customer do
+        where (filterName filterType name customer)
+    }
+
 // A sample customer
 let anton = customer "ANTON"
 
