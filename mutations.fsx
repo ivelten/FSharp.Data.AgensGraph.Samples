@@ -4,14 +4,18 @@ open FSharp.Data.AgensGraph
 open Northwind
 open Samples
 
+type UpdatedVertexProperties<'U>(query : ISC<Vertex<'U>>, properties : 'U) =
+    member __.Query = query
+    member __.Properties = properties
+
 type GraphBuilder with
-    [<CustomOperation("updateVertex", MaintainsVariableSpace=true, AllowIntoPattern=true)>]
-    member __.UpdateVertex(query : ISC<'T>, properties : 'U, collection : TypedVertices<'T, 'U>) =
-        Mutations.UpdateVertex(properties, query, collection)
+    [<CustomOperation("updateVertex")>]
+    member __.UpdateVertex(query : ISC<Vertex<'U>>, properties : Vertex<'U> -> 'U) =
+        query
 
 let props (e : Vertex<Employee>) = { e.Properties with ReportsTo = None }
 
 let x = graph {
-    for e in Employee do
-    updateVertex (props e) Employee
+    for emp in Employee do
+    updateVertex (emp.Properties)
 }

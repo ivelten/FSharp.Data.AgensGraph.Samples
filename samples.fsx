@@ -135,12 +135,13 @@ let changeManager employee newManager =
     removeManager employee
     assignManager employee newManager
 
-// Checks an employee actual manager
+// Gets an employee actual manager
 let getManager employee =
     graph {
         for (reportsTo, manager) in ReportsTo, Employee do
         constrain (employee-|reportsTo|->manager)
         select manager
+        single
     }
 
 // Sample employees

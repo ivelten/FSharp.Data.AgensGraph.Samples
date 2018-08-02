@@ -1,6 +1,6 @@
 NUGET
   remote: https://api.nuget.org/v3/index.json
-    FSharp.Core (4.5)
+    FSharp.Core (4.5.2)
       System.Collections (>= 4.0.11) - restriction: && (< net45) (>= netstandard1.6) (< netstandard2.0)
       System.Console (>= 4.0) - restriction: && (< net45) (>= netstandard1.6) (< netstandard2.0)
       System.Diagnostics.Debug (>= 4.0.11) - restriction: && (< net45) (>= netstandard1.6) (< netstandard2.0)
@@ -24,7 +24,7 @@ NUGET
       System.Threading.Thread (>= 4.0) - restriction: && (< net45) (>= netstandard1.6) (< netstandard2.0)
       System.Threading.ThreadPool (>= 4.0.10) - restriction: && (< net45) (>= netstandard1.6) (< netstandard2.0)
       System.Threading.Timer (>= 4.0.1) - restriction: && (< net45) (>= netstandard1.6) (< netstandard2.0)
-    FSharp.Data.AgensGraph (0.0.16)
+    FSharp.Data.AgensGraph (0.0.17)
       FSharp.Core
       Npgsql (4.0)
       System.Reflection.TypeExtensions
