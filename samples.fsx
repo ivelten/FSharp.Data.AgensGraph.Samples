@@ -93,6 +93,12 @@ let customersByContactName filterType name =
         where (filterName filterType name customer)
     }
 
+let customersById (ids : string seq) =
+    graph {
+        for customer in Customer do
+        where (customer.Properties.CustomerId |=| ids)
+    }
+
 // A sample customer
 let anton = customer "ANTON"
 
@@ -141,7 +147,7 @@ let removeManager (employee : Vertex<Employee>) =
     let updated = { employee.Properties with ReportsTo = None }
     connection.Execute [ Mutations.UpsertVertex((fun (e : Employee) -> e.EmployeeId), updated, Employee) ]
 
-// Createst a new relationship of an employee with a manager
+// Create a new relationship of an employee with a manager
 let assignManager (employee : Vertex<Employee>) (manager : Vertex<Employee>) =
     let updated = { employee.Properties with ReportsTo = Some manager.Properties.EmployeeId }
     connection.Execute 
@@ -176,7 +182,7 @@ let updateEmployee (e : Employee) =
         }
     connection.Execute [ Mutations.UpdateVertex(e, query, Employee) ]
 
-// Updates customer first name
+// Updates employee first name
 let updateFirstName (e : Vertex<Employee>) (newName : string) =
     let query = graph { select e }
     let updated = { e.Properties with FirstName = newName }

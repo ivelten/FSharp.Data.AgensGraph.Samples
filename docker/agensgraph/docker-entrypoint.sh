@@ -123,6 +123,8 @@ if [ "$1" = 'postgres' ]; then
 		PGUSER="${PGUSER:-postgres}" \
 		ag_ctl -D "$PGDATA" -m fast -w stop
 		sed -ri "s!^#?(listen_addresses)\s*=\s*\S+.*!\1 = '*'!" /agensgraph/data/postgresql.conf
+		echo "wal_level = logical" | tee -a /agensgraph/data/postgresql.conf
+		echo "max_replication_slots = 1" | tee -a /agensgraph/data/postgresql.conf
 		echo
 		echo 'PostgreSQL init process complete; ready for start up.'
 		echo
